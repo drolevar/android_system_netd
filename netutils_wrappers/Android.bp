@@ -19,6 +19,8 @@ cc_binary {
         "liblog",
     ],
     symlinks: [
+        "iptables-restore-wrapper-1.0",
+        "ip6tables-restore-wrapper-1.0",
         "iptables-wrapper-1.0",
         "ip6tables-wrapper-1.0",
         "ndc-wrapper-1.0",

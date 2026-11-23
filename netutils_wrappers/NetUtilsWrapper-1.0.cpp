@@ -33,15 +33,17 @@
 #define SYSTEM_DIRNAME  "/system/bin/"
 
 #define OEM_IFACE "[^ ]*oem[0-9]+"
-#define RMNET_IFACE "(r_)?rmnet_(data)?[0-9]+"
+#define RMNET_IFACE "(r_)?rmnet_(data|ims|r_ims|tun)?[0-9]+"
 #define CCMNI_IFACE "cc(3)?mni[0-9]+"
 #define WWAN_IFACE "wwan[0-9]+"
 #define VENDOR_IFACE "(" OEM_IFACE "|" RMNET_IFACE "|" CCMNI_IFACE "|" WWAN_IFACE ")"
-#define VENDOR_CHAIN "(oem_.*|nm_.*|qcom_.*)"
+#define VENDOR_CHAIN "(oem_.*|nm_.*|qcom_.*|hisi_ims.*)"
 
 // List of net utils wrapped by this program
 // The list MUST be in descending order of string length
 static const char *const netcmds[] = {
+    "ip6tables-restore",
+    "iptables-restore",
     "ip6tables",
     "iptables",
     "ndc",
@@ -54,9 +56,9 @@ static const char *const netcmds[] = {
 static const char *const EXPECTED_REGEXPS[] = {
 #define CMD "^" SYSTEM_DIRNAME
     // Create, delete, and manage OEM networks.
-    CMD "ndc network (create|destroy) (oem|handle)[0-9]+( |$)",
-    CMD "ndc network interface (add|remove) (oem|handle)[0-9]+ " VENDOR_IFACE,
-    CMD "ndc network route (add|remove) (oem|handle)[0-9]+ ",
+    CMD "ndc network (create|destroy) (oem[0-9]+|handle[0-9]+|50)( |$)",
+    CMD "ndc network interface (add|remove) (oem[0-9]+|handle[0-9]+|50) " VENDOR_IFACE,
+    CMD "ndc network route (add|remove) (oem[0-9]+|handle[0-9]+|50) ",
     CMD "ndc ipfwd (enable|disable) ",
     CMD "ndc ipfwd (add|remove) .*" VENDOR_IFACE,
 
@@ -78,6 +80,20 @@ static const char *const EXPECTED_REGEXPS[] = {
     CMD "ip(6)?tables -w .* -j " VENDOR_CHAIN,
     CMD "iptables -w -t mangle -[AD] PREROUTING -m socket --nowildcard --restore-skmark -j ACCEPT",
     CMD "ndc network interface (add|remove) oem[0-9]+$",  // Invalid command: no interface removed.
+
+    // Huawei Kirin 970 hinetmanager VoLTE/VoWiFi (IMS/ePDG) rules.
+    CMD "ip(6)?tables (-w)?.*(-t)? mangle (-A|-D) (OUTPUT|POSTROUTING|PREROUTING|hisi_ims.*).*(--set-dscp|--set-xmark)?.*",
+    CMD "ip(6)?tables (-w)?.*(-t)? filter -D (INPUT|OUTPUT|FORWARD).*-j ACCEPT",
+    CMD "ip(6)?tables (-w)?.*(-t)? filter (-I|-A|-D) OUTPUT.*-j REJECT",
+    CMD "ip(6)?tables -w -t nat -D POSTROUTING -s .* -j ACCEPT",
+    CMD "ip(6)?tables -t mangle -nvx -w -L.*",
+    CMD "ip(6)?tables-restore --noflush -w -v$",
+    CMD "ip( -4| -6)? route (add|del).*dev (rmnet_.*).*table [0-9]+",
+    CMD "ip( -4| -6)? rule .* goto 13000 prio 11999",
+    CMD "ip( -4| -6)? rule .* prio 25000",
+    CMD "ip( -4| -6)? rule (add|del) from.*lookup.*priority (25000|11000)",
+    CMD "ip( -4| -6)? rule (add|del) to.*lookup.*",
+    CMD "ip( -4| -6)? rule (add|del) from all oif (rmnet_.*).*lookup [0-9]+",
 #undef CMD
 };
 

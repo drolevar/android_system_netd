@@ -55,6 +55,17 @@ std::vector<Command> COMMANDS = {
     {VALID,   "/system/bin/ndc network interface add handle42966108894 wwan0"},
     {INVALID, "/system/bin/ndc network interface add handle42966108894"},
     {VALID,   "/system/bin/ip xfrm state"},
+    {VALID,   "/system/bin/ndc network create 50"},
+    {VALID,   "/system/bin/ndc network interface add 50 rmnet_ims00"},
+    {VALID,   "/system/bin/ndc network route add 50 rmnet_ims00 0.0.0.0/0"},
+    {INVALID, "/system/bin/ndc network create 100"},
+    {INVALID, "/system/bin/ndc network interface add 100 rmnet_ims00"},
+    {VALID,   "/system/bin/ip link set dev rmnet_r_ims00 up"},
+    {VALID,   "/system/bin/ip -4 addr add 10.1.2.3/32 dev rmnet_tun00"},
+    {VALID,   "/system/bin/ip -6 route add default dev rmnet_ims00 table 4000"},
+    {VALID,   "/system/bin/ip6tables-restore --noflush -w -v"},
+    {INVALID, "/system/bin/iptables-restore --noflush"},
+    {VALID,   "/system/bin/iptables -w -t mangle -A hisi_ims_ip4_pkt_mark -d 10.1.2.3/32 -p udp -m udp --dport 5060 -j MARK --set-xmark 0xB/0xffffffff"},
 };
 
 TEST(NetUtilsWrapperTest10, TestCommands) {
